@@ -1,9 +1,64 @@
 * Explain the Linux boot process, from BIOS/UEFI to user space.
+	First, there is a power on BIOS/UEFI. Then, the firmware runs POST to test the integrity of the machine. 
+	After successful completion, BIOS/UEFI seeks for a boot device (typically a bootable USB, HDD or SSD). BIOS looks for the first sector of the boot device, and UEFI - for EFI partition, specifically for .efi file. 
+	Next, the firmware launches a bootloader (typically GRUB2), which itself launches a kernel. If there are more than one, user can choose what kernel to load.
+	After the kernel is loaded, it starts to decompress itself, perform hardware checks, gain access to vital hardware and run the init process - a parent of all the other processes, which means running a Systemd process, as systemd is the most widespread init system in corporate Linux environment. 
+	Systemd probes all the hardware, mounts filesystems, initiates and terminates services, manages essential system processes like user login and runs a desktop environment.
+	Basically,
+	BIOS/UEFI -> boot device -> GRUB2 -> kernel -> systemd
 * Describe the purpose and structure of the /etc/passwd, /etc/shadow and /etc/group files.
+	~~~ /etc/passwd ~~~
+	Basically, this file stores user account information. It determines who has what rights. 
+	So, we have an entry in /etc/passwd:
+	backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+	   1  :2: 3: 4:   5  :      6     :       7
+	Here, we can see data sepated by colons. 
+	1) Username: determines what access level user has upon logging in
+	2) x: encrypted password, stored in /etc/shadow. You can change one's password by typing `passwd (user)`
+	3) Used ID: a unique ID that must be signed to every user. UID 0 is reserved for root and UID 1-99 are used for system accounts. Further are used for normal users.
+	4) Group ID: a primary group ID (stored in /etc/group)
+	5) GECOS ID: a legacy user ID containing additional information about user
+	6) Home directory: absolute path to the directory where user stores files
+	7) Default shell: user's default shell that starts after user log in
+
+	~~~ /etc/shadow ~~~
+	Same as /etc/passwd, but stores secure things.
+	mail:*:19478:0:99999:7:::
+	  1 :2:  3  :4:  5  :6:7:8:
+	1) Username: must be same as username in /etc/passwd, otherwise this is another user
+	2) Password: stored in an encrypted format: $id$salt$hashed.
+	Here, $id is hashing algorith.
+	Asterisk means no password is needed.
+	3) Last password change (day): the amount of days passed since 1 Jan 1970.
+	0 means password change upon login.
+	4) Minimum number of days between password change. 0 means no password age.
+	5) Maximum number of days password being valid.
+	6) Warn: number of days to warn before password is to expire
+
+	~~~ /etc/group ~~~
+	Defines the groups to which users belong.
+	netdev:x:116:think
+	   1  :2: 3 :  4
+	1) Name of the group
+	2) Password
+	3) Group ID
+	4) List of users assigned to the group
+	To apply changes made in these files, log out and log in. You can also logout everyone forcefully, but don't forget to warn.
+
 * What is /etc/shells?
+	A file containing list of valid shells to use in shell scripts.
+	Typically, you would use /usr/bin/env bash as you know for sure there will be a shell.
 * How does the Linux kernel manage processes? Explain the role of fork, exec, and wait.
+	
 * What is the purpose of the /proc filesystem, and how is it used for process management?
+	A pseudo-filesystem that gets mounted and populated every time computer launches. Used as an interface to kernel data structures.
+	There are directories (filenames of whose correspond to their process IDs) storing information about process and other important files needed by kernel such as cpuinfo, vmstat and others.
+	This filesystem is dymanic, meaning reading from them provides real-time data. Programs such as GNU top use the information in these files to get the current state of the system.
+	It is also important to mention files in /proc don't take any space on hard drive since the whole directory is stored in RAM.
 * Differentiate between ext3, ext4, XFS, and Btrfs filesystems. When would you choose one over the other?
+	Basically, ext4 is a successor of ext3. It has many useful built-in features such as faster filesystem checks, 1EiB max filesystem size and 16TB max single file size, nanosecond timestamps and encryption support. Ext4 is also a default Linux filesystem as it is the most stable and widely supported one.
+	XFS is a default filesystem for RHEL 7 and above. It's also not limited to RHEL distributions. It is optimized for high-performance machines and doesn't do that well for a general purpose usage. Works best with large filesizes and high IOPS disks.
+	Btrfs is generally used for NAS and SAN environments as it can span across multiple disks, whereas ext4 and xfs can't.
 * Explain the concept of inodes and how they are used in file systems.	
 * Describe the purpose and configuration of LVM (Logical Volume Manager).
 * How do you troubleshoot disk I/O performance issues on a Linux system?
